@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x08rs.proto\x12\x0eRecommendation\"\x19\n\x0bUserRequest\x12\n\n\x02id\x18\x01 \x01(\t\"\x1f\n\x0cItemResponse\x12\x0f\n\x07itemIds\x18\x01 \x03(\t\"\x18\n\x05\x43heck\x12\x0f\n\x07message\x18\x01 \x01(\t2c\n\x0eRecommendation\x12Q\n\x12GetItemRecommended\x12\x1b.Recommendation.UserRequest\x1a\x1c.Recommendation.ItemResponse\"\x00\x62\x06proto3'
+  serialized_pb=b'\n\x08rs.proto\x12\x0eRecommendation\"\x19\n\x0bUserRequest\x12\n\n\x02id\x18\x01 \x01(\t\"\x1f\n\x0cItemResponse\x12\x0f\n\x07itemIds\x18\x01 \x03(\t\"\x18\n\x05\x43heck\x12\x0f\n\x07message\x18\x01 \x01(\t2\xa2\x01\n\x0eRecommendation\x12Q\n\x12GetItemRecommended\x12\x1b.Recommendation.UserRequest\x1a\x1c.Recommendation.ItemResponse\"\x00\x12=\n\x0bTrackChange\x12\x15.Recommendation.Check\x1a\x15.Recommendation.Check\"\x00\x62\x06proto3'
 )
 
 
@@ -155,8 +155,8 @@ _RECOMMENDATION = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=114,
-  serialized_end=213,
+  serialized_start=115,
+  serialized_end=277,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetItemRecommended',
@@ -165,6 +165,16 @@ _RECOMMENDATION = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_USERREQUEST,
     output_type=_ITEMRESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
+    name='TrackChange',
+    full_name='Recommendation.Recommendation.TrackChange',
+    index=1,
+    containing_service=None,
+    input_type=_CHECK,
+    output_type=_CHECK,
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
   ),

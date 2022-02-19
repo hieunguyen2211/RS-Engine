@@ -23,31 +23,63 @@ import grpc
 from content_base import ContentBase
 import rs_pb2
 import rs_pb2_grpc
-
+import urllib
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 class RecommendationServicer(rs_pb2_grpc.RecommendationServicer):
     """Provides methods that implement functionality of route guide server."""
     def __init__(self):
-        yhat, users, data = InitDb()
-        self.yhat = yhat
-        self.users = users
-        self.data = data
+        self.server = os.getenv('SERVER')
+        self.user = os.getenv('USER')
+        self.password = os.getenv('PASSWORD')
+        self.port = os.getenv('PORT')
+        self.database = os.getenv('DATABASE_NAME')
+        print('server', self.server)
+        print('server', self.user)
+        print('server', self.password)
+        print('server', self.port)
+        print('server', self.database)
+
+        InitDb(self)
+
+
+    def TrackChange(self, request, context):
+        print('track change');
+        try:
+          yhat, users, data = InitDb(self)
+          self.yhat = yhat
+          self.users = users
+          self.data = data
+          return rs_pb2.Check(message='success')
+        except:
+          return rs_pb2.Check(message='failed')
 
     def GetItemRecommended(self, request, context):
         indexUserId = self.get_Index_user(request.id)
         itemIdsRated = self.yhat[:, indexUserId]
-        print('itemIdsRated', itemIdsRated)
-        output = np.asarray([idx for idx, element in enumerate(itemIdsRated) if (element > 3.5)])
+        output = np.asarray([idx for idx, element in enumerate(itemIdsRated) if (element > 0)])
+        print('output 1', output)
+
         if output.size == 0:
+            # Get Most popular
             itemIds = self.GetMostPularItem()
             return rs_pb2.ItemResponse(itemIds=itemIds)
         else:
+            # get rated item
             itemIds = self.data[output, 0]
-            return rs_pb2.ItemResponse(itemIds=itemIds)
+            print('itemIdsRated', itemIdsRated)
+            print('output', output)
+            #return index of a sorted list
+            indexItemSortedIds = sorted(range(len(itemIds)), key=lambda k: itemIds[k], reverse=True)
+            print('item sorted', indexItemSortedIds)
+            return rs_pb2.ItemResponse(itemIds=self.data[:,0][indexItemSortedIds]) #return sorted List ids of item by uuid
 
     def GetMostPularItem(self):
         sumArr = np.asarray(list(map((lambda  x: sum(x)), self.yhat)))
-        indexItemSortedIds = sorted(range(len(sumArr)), key=lambda k : sumArr[k])
+        # return index of a sorted list
+        indexItemSortedIds = sorted(range(len(sumArr)), key=lambda k : sumArr[k], reverse=True)
         return self.data[:,0][indexItemSortedIds] #return sorted List ids of item by uuid
 
     def get_Index_user(self, userId):
@@ -58,8 +90,14 @@ def mapData(item, l_tags):
       i_map.insert(0, item[0])
       return np.asarray(i_map)
 
-def InitDb():
-    engine = create_engine("mssql+pyodbc://danh:123456789@itnetwork.viewdns.net:1433/itnetwork?driver=ODBC+Driver+17+for+SQL+Server")
+def InitDb(self):
+    params = urllib.parse.quote_plus("DRIVER=ODBC+Driver+17+for+SQL+Server;"
+                                     "SERVER="+self.server+";"
+                                     "DATABASE="+self.database+";"
+                                     "UID="+self.user+";"
+                                     "PWD="+self.password)
+    engine = create_engine("mssql+pyodbc:///?odbc_connect={}".format(params))
+
     with engine.connect() as connection:
         result = connection.execute(text("SELECT jobs.id, tags.name  FROM dbo.jobs inner join job_tag on jobs.id = job_tag.jobId inner join tags on tags.id = job_tag.tagId"))
         test = [{column: value for column, value in rowproxy.items()} for rowproxy in result] #Return List of Dict
@@ -99,13 +137,17 @@ def getUserRatingMatrix(engine):
 
 async def serve() -> None:
   server = grpc.aio.server()
+
   rs_pb2_grpc.add_RecommendationServicer_to_server(
     RecommendationServicer(), server)
-  server.add_insecure_port('[::]:50051')
+
+  listen_addr = '[::]:50051'
+  server.add_insecure_port(listen_addr)
+  logging.info("Starting server on %s", listen_addr)
   await server.start()
   await server.wait_for_termination()
 
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO)
-  asyncio.get_event_loop().run_until_complete(serve())
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(serve())
